@@ -1,8 +1,7 @@
 import nltk
 import streamlit as st
 import os
-nltk.download('punkt')
-nltk.download('stopwords')
+nltk.data.path.append('./nltk_data')
 import re
 import string
 import numpy as np
