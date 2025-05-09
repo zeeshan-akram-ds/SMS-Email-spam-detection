@@ -1,9 +1,17 @@
 import streamlit as st
-import re
+import os
+
+nltk_data_dir = os.path.join(os.getcwd(), 'nltk_data')
+os.makedirs(nltk_data_dir, exist_ok=True)
+
+nltk.download('punkt', download_dir=nltk_data_dir)
+nltk.download('stopwords', download_dir=nltk_data_dir)
+nltk.data.path.append(nltk_data_dir)import re
 import string
 import numpy as np
 import pandas as pd
 import joblib
+import nltk
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
@@ -13,9 +21,8 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
-import nltk
-nltk.download('punkt')
-nltk.download('stopwords')
+
+
 
 # Load
 voting_clf = joblib.load("Spam_detection_voting.pkl")
