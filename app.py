@@ -5,13 +5,12 @@ import numpy as np
 import pandas as pd
 import joblib
 
-# Display initial loading message
 st.set_page_config(page_title="SMS/Email Spam Detection", layout="centered")
 st.title("SMS/Email Spam Detection")
 loading_placeholder = st.empty()
 loading_placeholder.info("Loading resources... please wait.")
 
-# Create custom tokenizer function that doesn't rely on NLTK
+# custom tokenizer function
 def simple_tokenize(text):
     """Simple tokenizer that splits on whitespace and punctuation"""
     # Remove punctuation
@@ -19,7 +18,7 @@ def simple_tokenize(text):
     # Split on whitespace and filter empty strings
     return [token for token in text.split() if token]
 
-# Basic stopword list without requiring NLTK
+# Basic stopword list 
 STOPWORDS = set([
     'i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', 'your', 
     'yours', 'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she', 
@@ -37,7 +36,7 @@ STOPWORDS = set([
     't', 'can', 'will', 'just', 'don', 'should', 'now'
 ])
 
-# Simple stemming function without requiring NLTK
+# Simple stemming function
 def simple_stem(word):
     """Extremely simplified stemmer that just removes common endings"""
     if len(word) > 4:
@@ -46,7 +45,7 @@ def simple_stem(word):
                 return word[:-len(ending)]
     return word
 
-# Load models with error handling
+
 try:
     voting_clf = joblib.load("Spam_detection_voting.pkl")
     tfidf_vectorizer = joblib.load("tfidf_spam_voting.pkl")
@@ -56,7 +55,6 @@ except Exception as e:
     st.error(f"Error loading models: {str(e)}")
     models_loaded = False
 
-# Preprocessing function without NLTK dependencies
 def preprocess_text(text):
     # Lowercase 
     text = text.lower()
@@ -64,21 +62,18 @@ def preprocess_text(text):
     text = re.sub(r"http\S+|www\S+|\S+@\S+|\d+", "", text)
     text = text.translate(str.maketrans('', '', string.punctuation)) 
     
-    # Tokenize with our simple tokenizer
     tokens = simple_tokenize(text)
     
     # Remove stopwords and apply stemming
     filtered = [simple_stem(word) for word in tokens if word not in STOPWORDS]
     return " ".join(filtered)
 
-# Clear loading message
 loading_placeholder.empty()
 
-# UI Elements
 st.title("SMS/Email Spam Detection")
 input_text = st.text_area("Enter the message/text", height=150)
 
-# Metrics of Model
+# Metrics 
 accuracy = 0.9845261121856866
 precision = 1.0
 recall = 0.8888888888888888
@@ -103,18 +98,16 @@ if st.button('Predict'):
         try:
             # Show processing status
             with st.spinner("Processing..."):
-                # Preprocess the input
                 preprocessed_text = preprocess_text(input_text)
                 
                 # Transform the text
                 tfidf_input = tfidf_vectorizer.transform([preprocessed_text])
                 prediction = voting_clf.predict(tfidf_input)
                 
-                # Display result with appropriate styling
                 if prediction == 1:
-                    st.error("🚨 This is a SPAM message! 🚨")
+                    st.error("This is a SPAM message!")
                 else:
-                    st.success("✅ This is NOT a SPAM message!")
+                    st.success("This is NOT a SPAM message!")
         except Exception as e:
             st.error(f"Error during prediction: {str(e)}")
             st.info("Try refreshing the page or contact the developer for support.")
