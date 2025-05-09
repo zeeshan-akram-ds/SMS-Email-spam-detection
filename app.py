@@ -13,6 +13,9 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+import nltk
+nltk.download('punkt')
+nltk.download('stopwords')
 
 # Load
 voting_clf = joblib.load("Spam_detection_voting.pkl")
