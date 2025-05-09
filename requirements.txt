@@ -1,6 +1,11 @@
 streamlit
+nltk
 scikit-learn
 pandas
 numpy
-nltk
 joblib
+matplotlib
+wordcloud
+seaborn
+xgboost
+optuna
