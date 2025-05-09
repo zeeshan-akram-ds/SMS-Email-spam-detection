@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import nltk
 
 nltk_data_dir = os.path.join(os.getcwd(), 'nltk_data')
 os.makedirs(nltk_data_dir, exist_ok=True)
@@ -12,7 +13,6 @@ import string
 import numpy as np
 import pandas as pd
 import joblib
-import nltk
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
