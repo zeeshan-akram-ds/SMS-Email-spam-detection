@@ -1,5 +1,4 @@
 import streamlit as st
-import os
 import re
 import string
 import numpy as np
@@ -10,9 +9,9 @@ import joblib
 st.set_page_config(page_title="SMS/Email Spam Detection", layout="centered")
 st.title("SMS/Email Spam Detection")
 loading_placeholder = st.empty()
-loading_placeholder.info("Loading NLTK resources... please wait.")
+loading_placeholder.info("Loading resources... please wait.")
 
-# Create custom tokenizer function that doesn't rely on punkt_tab
+# Create custom tokenizer function that doesn't rely on NLTK
 def simple_tokenize(text):
     """Simple tokenizer that splits on whitespace and punctuation"""
     # Remove punctuation
@@ -20,66 +19,44 @@ def simple_tokenize(text):
     # Split on whitespace and filter empty strings
     return [token for token in text.split() if token]
 
-# Configure NLTK with explicit error handling
-import nltk
+# Basic stopword list without requiring NLTK
+STOPWORDS = set([
+    'i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', 'your', 
+    'yours', 'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she', 
+    'her', 'hers', 'herself', 'it', 'its', 'itself', 'they', 'them', 'their', 
+    'theirs', 'themselves', 'what', 'which', 'who', 'whom', 'this', 'that', 
+    'these', 'those', 'am', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 
+    'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing', 'a', 'an', 
+    'the', 'and', 'but', 'if', 'or', 'because', 'as', 'until', 'while', 'of', 
+    'at', 'by', 'for', 'with', 'about', 'against', 'between', 'into', 'through', 
+    'during', 'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down', 
+    'in', 'out', 'on', 'off', 'over', 'under', 'again', 'further', 'then', 
+    'once', 'here', 'there', 'when', 'where', 'why', 'how', 'all', 'any', 
+    'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 
+    'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 's', 
+    't', 'can', 'will', 'just', 'don', 'should', 'now'
+])
 
-# Try multiple download locations
-nltk_dirs = ['./nltk_data', '/app/nltk_data', os.path.expanduser('~/nltk_data')]
-for nltk_dir in nltk_dirs:
-    os.makedirs(nltk_dir, exist_ok=True)
-    nltk.data.path.insert(0, nltk_dir)
-
-# Download necessary resources with fallback
-try:
-    nltk.download('stopwords', download_dir=nltk_dirs[0])
-    from nltk.corpus import stopwords
-    STOPWORDS = set(stopwords.words("english"))
-    loading_placeholder.success("NLTK resources loaded successfully!")
-except Exception as e:
-    st.warning(f"Could not load NLTK stopwords: {str(e)}. Using a basic stopword list.")
-    # Fallback to a basic stopword list
-    STOPWORDS = set([
-        'i', 'me', 'my', 'myself', 'we', 'our', 'ours', 'ourselves', 'you', 'your', 
-        'yours', 'yourself', 'yourselves', 'he', 'him', 'his', 'himself', 'she', 
-        'her', 'hers', 'herself', 'it', 'its', 'itself', 'they', 'them', 'their', 
-        'theirs', 'themselves', 'what', 'which', 'who', 'whom', 'this', 'that', 
-        'these', 'those', 'am', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 
-        'have', 'has', 'had', 'having', 'do', 'does', 'did', 'doing', 'a', 'an', 
-        'the', 'and', 'but', 'if', 'or', 'because', 'as', 'until', 'while', 'of', 
-        'at', 'by', 'for', 'with', 'about', 'against', 'between', 'into', 'through', 
-        'during', 'before', 'after', 'above', 'below', 'to', 'from', 'up', 'down', 
-        'in', 'out', 'on', 'off', 'over', 'under', 'again', 'further', 'then', 
-        'once', 'here', 'there', 'when', 'where', 'why', 'how', 'all', 'any', 
-        'both', 'each', 'few', 'more', 'most', 'other', 'some', 'such', 'no', 
-        'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very', 's', 
-        't', 'can', 'will', 'just', 'don', 'should', 'now'
-    ])
-
-# Try to import stemmer or use a simple lambda as fallback
-try:
-    from nltk.stem import PorterStemmer
-    stemmer = PorterStemmer().stem
-except Exception as e:
-    st.warning(f"Could not load NLTK PorterStemmer: {str(e)}. Using basic stemming.")
-    # Very simple stemming function as fallback
-    def stemmer(word):
-        """Extremely simplified stemmer that just removes common endings"""
-        if len(word) > 4:
-            for ending in ['ing', 'ed', 'es', 's']:
-                if word.endswith(ending):
-                    return word[:-len(ending)]
-        return word
+# Simple stemming function without requiring NLTK
+def simple_stem(word):
+    """Extremely simplified stemmer that just removes common endings"""
+    if len(word) > 4:
+        for ending in ['ing', 'ed', 'es', 's']:
+            if word.endswith(ending):
+                return word[:-len(ending)]
+    return word
 
 # Load models with error handling
 try:
     voting_clf = joblib.load("Spam_detection_voting.pkl")
     tfidf_vectorizer = joblib.load("tfidf_spam_voting.pkl")
     models_loaded = True
+    loading_placeholder.success("Models loaded successfully!")
 except Exception as e:
     st.error(f"Error loading models: {str(e)}")
     models_loaded = False
 
-# Preprocessing function with fallback tokenizer
+# Preprocessing function without NLTK dependencies
 def preprocess_text(text):
     # Lowercase 
     text = text.lower()
@@ -87,15 +64,11 @@ def preprocess_text(text):
     text = re.sub(r"http\S+|www\S+|\S+@\S+|\d+", "", text)
     text = text.translate(str.maketrans('', '', string.punctuation)) 
     
-    # Tokenize with fallback method
-    try:
-        from nltk.tokenize import word_tokenize
-        tokens = word_tokenize(text)
-    except Exception:
-        tokens = simple_tokenize(text)
+    # Tokenize with our simple tokenizer
+    tokens = simple_tokenize(text)
     
     # Remove stopwords and apply stemming
-    filtered = [stemmer(word) for word in tokens if word not in STOPWORDS]
+    filtered = [simple_stem(word) for word in tokens if word not in STOPWORDS]
     return " ".join(filtered)
 
 # Clear loading message
