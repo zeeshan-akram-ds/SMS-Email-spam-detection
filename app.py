@@ -1,12 +1,35 @@
 import nltk
-nltk.download('punkt')
-nltk.download('stopwords')
 import streamlit as st
 import os
 import re
 import string
 import numpy as np
 import pandas as pd
+os.makedirs('nltk_data', exist_ok=True)
+
+# Configure NLTK to use the custom data directory
+nltk.data.path.insert(0, './nltk_data')
+
+# Download necessary NLTK resources with explicit error handling
+try:
+    # Try to download punkt and stopwords
+    nltk.download('punkt', download_dir='./nltk_data')
+    nltk.download('stopwords', download_dir='./nltk_data')
+    
+    # After downloading, explicitly try to load them to verify
+    from nltk.tokenize import word_tokenize
+    from nltk.corpus import stopwords
+    # Test if they load correctly
+    stopwords.words('english')[:1]  # Just testing if it works
+    word_tokenize("Test sentence")  # Test tokenization
+    
+except Exception as e:
+    st.error(f"NLTK Resource Error: {str(e)}")
+    st.info("Attempting alternative download approach...")
+    # Try alternative approach with default download directory
+    nltk.download('punkt')
+    nltk.download('stopwords')
+
 import joblib
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
