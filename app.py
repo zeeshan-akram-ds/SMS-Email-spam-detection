@@ -80,10 +80,7 @@ if st.button('Predict'):
                     st.error("This is a SPAM message!")
                 else:
                     st.success("This is NOT a SPAM message!")
-                proba = voting_clf.predict_proba(tfidf_input)[0][1]
-                st.write(f"**Spam Probability:** `{proba:.2%}`")
         except Exception as e:
             st.error(f"Error during prediction: {str(e)}")
-            st.info("Try refreshing the page or contact the developer for support.")
 
 st.markdown("<br><br><center><i>Developed by Zeeshan Akram</i></center>", unsafe_allow_html=True)
