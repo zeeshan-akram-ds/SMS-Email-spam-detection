@@ -6,7 +6,6 @@ import pandas as pd
 import joblib
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 
-# Optional stemming
 try:
     from nltk.stem.porter import PorterStemmer
     stemmer = PorterStemmer()
@@ -20,11 +19,11 @@ st.title("SMS/Email Spam Detection")
 loading_placeholder = st.empty()
 loading_placeholder.info("Loading resources... please wait.")
 
-# Tokenizer using regex (word-based)
+# Tokenizer
 def tokenize_text(text):
     return re.findall(r'\b\w+\b', text.lower())
 
-# Preprocessing function
+# Preprocessing
 def preprocess_text(text):
     tokens = tokenize_text(text)
     processed = []
@@ -36,7 +35,6 @@ def preprocess_text(text):
         processed.append(token)
     return " ".join(processed)
 
-# Load model and vectorizer
 try:
     voting_clf = joblib.load("Spam_detection_voting.pkl")
     tfidf_vectorizer = joblib.load("tfidf_spam_voting.pkl")
@@ -48,10 +46,10 @@ except Exception as e:
 
 loading_placeholder.empty()
 
-# Input Section
+# Input
 input_text = st.text_area("Enter the message/text", height=150)
 
-# Static Metrics (replace with dynamic if needed)
+# Metrics
 accuracy = 0.9845
 precision = 1.0
 recall = 0.8889
@@ -79,9 +77,9 @@ if st.button('Predict'):
                 tfidf_input = tfidf_vectorizer.transform([preprocessed_text])
                 prediction = voting_clf.predict(tfidf_input)
                 if prediction == 1:
-                    st.error("🚫 This is a SPAM message!")
+                    st.error("This is a SPAM message!")
                 else:
-                    st.success("✅ This is NOT a SPAM message!")
+                    st.success("This is NOT a SPAM message!")
         except Exception as e:
             st.error(f"Error during prediction: {str(e)}")
             st.info("Try refreshing the page or contact the developer for support.")
