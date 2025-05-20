@@ -4,6 +4,8 @@ import string
 import numpy as np
 import pandas as pd
 import joblib
+import matplotlib.pyplot as plt
+import seaborn as sns
 import nltk
 nltk.download('punkt')
 nltk.download('punkt_tab')
@@ -17,11 +19,16 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+import lime
+from lime.lime_text import LimeTextExplainer
+import streamlit.components.v1 as components
 
 # Load
 bernouli_clf = joblib.load("Spam_detection_bernouli.pkl")
 tfidf_vectorizer = joblib.load("tfidf_spam_voting.pkl")
 
+class_names = ['Ham', 'Spam']
+explainer = LimeTextExplainer(class_names=class_names)
 # Preprocessing function
 stop_words = set(stopwords.words("english"))
 stemmer = PorterStemmer()
@@ -84,6 +91,53 @@ if st.button('Predict'):
             st.header("This is a SPAM message!")
         else:
             st.header("This is NOT a SPAM message!")
+        with st.spinner("Explaining with LIME..."):
+            exp = explainer.explain_instance(
+                input_text,
+                classifier_fn=lambda x: bernouli_clf.predict_proba(tfidf_vectorizer.transform([preprocess_text(i) for i in x])),
+                num_features=8
+            )
+            exp.save_to_file('lime_explanation.html')
+
+            try:
+                with open('lime_explanation.html', 'r', encoding='utf-8') as f:
+                    lime_html = f.read()
+                    components.html(lime_html, height=600, scrolling=True)
+
+                # Prepare data for plotting
+                word_weights = exp.as_list()
+                df = pd.DataFrame(word_weights, columns=["Word", "Weight"])
+                df["Impact"] = df["Weight"].apply(lambda x: "SPAM" if x > 0 else "NOT SPAM")
+                df["Color"] = df["Impact"].map({"SPAM": "#e74c3c", "NOT SPAM": "#27ae60"})  # Red / Green
+                df["AbsWeight"] = df["Weight"].abs()
+                df = df.sort_values("AbsWeight", ascending=True)
+
+                # Plotting
+                st.markdown("### Top Influential Words (Visualized)")
+                fig, ax = plt.subplots(figsize=(8, 5))
+                sns.set_style("whitegrid")
+
+                bars = ax.barh(df["Word"], df["Weight"], color=df["Color"])
+
+                # Add value labels
+                for bar, val in zip(bars, df["Weight"]):
+                    ax.text(
+                        val + 0.01 if val > 0 else val - 0.01,
+                        bar.get_y() + bar.get_height() / 2,
+                        f"{val:.2f}",
+                        ha="left" if val > 0 else "right",
+                        va="center",
+                        fontsize=10,
+                        color="black"
+                    )
+
+                ax.set_title("Influence of Words on Prediction", fontsize=14)
+                ax.set_xlabel("Weight (Importance)", fontsize=12)
+                ax.set_ylabel("")
+                st.pyplot(fig)
+
+            except Exception as e:
+                st.error(f"Couldn't load LIME explanation: {e}")
     else:
         st.warning("Please enter a message to predict.")
 
