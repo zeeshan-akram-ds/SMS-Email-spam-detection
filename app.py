@@ -95,50 +95,53 @@ if st.button('Predict'):
             exp = explainer.explain_instance(
                 input_text,
                 classifier_fn=lambda x: bernouli_clf.predict_proba(tfidf_vectorizer.transform([preprocess_text(i) for i in x])),
-                num_features=8  # Keep this small to prevent overplotting
+                num_features=8
             )
             exp.save_to_file('lime_explanation.html')
         
             try:
+                # Show LIME HTML Explanation
                 with open('lime_explanation.html', 'r', encoding='utf-8') as f:
                     lime_html = f.read()
                     components.html(lime_html, height=600, scrolling=True)
         
-                # Prepare and clean data
+                # ----------- STABLE BAR PLOT -----------
+                st.markdown("### 📊 Top Influential Words (Balanced View)")
+        
+                # Prepare data
                 word_weights = exp.as_list()
                 df = pd.DataFrame(word_weights, columns=["Word", "Weight"])
-                df["Word"] = df["Word"].apply(lambda w: w[:20] + "..." if len(w) > 20 else w)  # Trim long words
+                df["Word"] = df["Word"].apply(lambda w: (w[:18] + "...") if len(w) > 18 else w)  # Trim long labels
                 df = df.sort_values("Weight")
         
                 # Assign colors
-                df["Color"] = df["Weight"].apply(lambda x: "#e74c3c" if x > 0 else "#27ae60")
+                df["Color"] = df["Weight"].apply(lambda x: "#2ecc71" if x < 0 else "#e74c3c")  # Green for NOT SPAM, Red for SPAM
         
-                # Plot with fixed safe size
-                st.markdown("### 📊 Top Influential Words (Diverging View)")
-                fig, ax = plt.subplots(figsize=(8, 4))  # Smaller fixed size
-                sns.set_style("whitegrid")
-        
+                # Plot
+                fig, ax = plt.subplots(figsize=(7, 4))  # Safe fixed size
                 bars = ax.barh(df["Word"], df["Weight"], color=df["Color"])
         
-                # Add value labels
+                # Label bars safely
                 for bar, weight in zip(bars, df["Weight"]):
-                    xpos = weight + 0.02 if weight > 0 else weight - 0.02
-                    align = 'left' if weight > 0 else 'right'
-                    ax.text(xpos, bar.get_y() + bar.get_height()/2,
-                            f"{weight:.2f}", ha=align, va='center', fontsize=9, color="black")
+                    label_x = weight + 0.02 if weight > 0 else weight - 0.02
+                    ha = 'left' if weight > 0 else 'right'
+                    ax.text(label_x, bar.get_y() + bar.get_height() / 2,
+                            f"{weight:.2f}", va='center', ha=ha, fontsize=8, color="black")
         
-                ax.axvline(0, color='gray', linewidth=0.8)
-                ax.set_title("Influence of Words on SPAM/NOT SPAM Prediction", fontsize=13)
-                ax.set_xlabel("Word Importance Weight", fontsize=11)
-                ax.set_ylabel("")
-                ax.grid(True, axis='x', linestyle='--', alpha=0.4)
+                # Format plot
+                ax.axvline(0, color='black', linewidth=0.6)
+                ax.set_title("Word Impact on Prediction", fontsize=12, weight='bold')
+                ax.set_xlabel("Importance Weight", fontsize=10)
+                ax.set_xlim(-0.3, 0.3)  # Enforce safe width range
+                ax.grid(axis='x', linestyle='--', alpha=0.3)
+                ax.set_yticklabels(ax.get_yticklabels(), fontsize=9)
                 plt.tight_layout()
         
+                # Display
                 st.pyplot(fig)
         
             except Exception as e:
                 st.error(f"Couldn't load LIME explanation: {e}")
-
     else:
         st.warning("Please enter a message to predict.")
 
