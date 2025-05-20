@@ -95,7 +95,7 @@ if st.button('Predict'):
             exp = explainer.explain_instance(
                 input_text,
                 classifier_fn=lambda x: bernouli_clf.predict_proba(tfidf_vectorizer.transform([preprocess_text(i) for i in x])),
-                num_features=8
+                num_features=8  # Keep this small to prevent overplotting
             )
             exp.save_to_file('lime_explanation.html')
         
@@ -104,36 +104,36 @@ if st.button('Predict'):
                     lime_html = f.read()
                     components.html(lime_html, height=600, scrolling=True)
         
-                # Prepare data for plotting
+                # Prepare and clean data
                 word_weights = exp.as_list()
                 df = pd.DataFrame(word_weights, columns=["Word", "Weight"])
-                df["Impact"] = df["Weight"].apply(lambda x: "SPAM" if x > 0 else "NOT SPAM")
-                df["Color"] = df["Impact"].map({"SPAM": "#e74c3c", "NOT SPAM": "#27ae60"})  # Red / Green
-                df["AbsWeight"] = df["Weight"].abs()
-                df = df.sort_values("AbsWeight", ascending=True)
+                df["Word"] = df["Word"].apply(lambda w: w[:20] + "..." if len(w) > 20 else w)  # Trim long words
+                df = df.sort_values("Weight")
         
-                # Plotting
-                st.markdown("### 📊 Top Influential Words (Visualized)")
-                fig, ax = plt.subplots(figsize=(8, 5))
+                # Assign colors
+                df["Color"] = df["Weight"].apply(lambda x: "#e74c3c" if x > 0 else "#27ae60")
+        
+                # Plot with fixed safe size
+                st.markdown("### 📊 Top Influential Words (Diverging View)")
+                fig, ax = plt.subplots(figsize=(8, 4))  # Smaller fixed size
                 sns.set_style("whitegrid")
         
                 bars = ax.barh(df["Word"], df["Weight"], color=df["Color"])
         
                 # Add value labels
-                for bar, val in zip(bars, df["Weight"]):
-                    ax.text(
-                        val + 0.01 if val > 0 else val - 0.01,
-                        bar.get_y() + bar.get_height() / 2,
-                        f"{val:.2f}",
-                        ha="left" if val > 0 else "right",
-                        va="center",
-                        fontsize=10,
-                        color="black"
-                    )
+                for bar, weight in zip(bars, df["Weight"]):
+                    xpos = weight + 0.02 if weight > 0 else weight - 0.02
+                    align = 'left' if weight > 0 else 'right'
+                    ax.text(xpos, bar.get_y() + bar.get_height()/2,
+                            f"{weight:.2f}", ha=align, va='center', fontsize=9, color="black")
         
-                ax.set_title("Influence of Words on Prediction", fontsize=14)
-                ax.set_xlabel("Weight (Importance)", fontsize=12)
+                ax.axvline(0, color='gray', linewidth=0.8)
+                ax.set_title("Influence of Words on SPAM/NOT SPAM Prediction", fontsize=13)
+                ax.set_xlabel("Word Importance Weight", fontsize=11)
                 ax.set_ylabel("")
+                ax.grid(True, axis='x', linestyle='--', alpha=0.4)
+                plt.tight_layout()
+        
                 st.pyplot(fig)
         
             except Exception as e:
