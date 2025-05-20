@@ -38,7 +38,18 @@ def preprocess_text(text):
     return " ".join(filtered)
 
 st.set_page_config(page_title="SMS/Email Spam Detection", layout="centered")
-
+st.sidebar.title("Explore Visualizations")
+viz_option = st.sidebar.radio(
+    "Select a visualization category:",
+    ("None", 
+     "WordClouds", 
+     "Most Frequent Words", 
+     "Top Bigrams", 
+     "Threshold vs Metrics", 
+     "ROC and PR Curves", 
+     "Top 20 Spam Indicator Words",
+     "Confusion Matrix")
+)
 st.title("SMS/Email Spam Detection")
 
 input_text = st.text_area("Enter the message/text", height=150)
@@ -75,4 +86,30 @@ if st.button('Predict'):
             st.header("This is NOT a SPAM message!")
     else:
         st.warning("Please enter a message to predict.")
+
+if viz_option != "None":
+    st.markdown("---")
+    st.subheader("Visualization")
+
+    if viz_option == "WordClouds":
+        st.image("wordcloud_spam.png", caption="Spam WordCloud", use_container_width=True)
+        st.image("wordcloud_ham.png", caption="Ham WordCloud", use_container_width=True)
+
+    elif viz_option == "Most Frequent Words":
+        st.image("spam_ham_top_words.png", caption="Most Frequent Words in Spam and Ham", use_container_width=True)
+
+    elif viz_option == "Top Bigrams":
+        st.image("spam_ham_top_bigrams.png", caption="Top 10 Bigrams in Spam and Ham", use_container_width=True)
+
+    elif viz_option == "Threshold vs Metrics":
+        st.image("thres_vs_metrics_spam_detection.png", caption="Precision, Recall, F1 vs Threshold", use_container_width=True)
+
+    elif viz_option == "ROC and PR Curves":
+        st.image("roc_curve_spam_detection.png", caption="ROC Curve", use_container_width=True)
+        st.image("pr_curve_spam_detection.png", caption="Precision-Recall Curve", use_container_width=True)
+
+    elif viz_option == "Top 20 Spam Indicator Words":
+        st.image("top_20_spam_indicators.png", caption="Top 20 Spam Indicator Words from BernoulliNB", use_container_width=True)
+    elif viz_option == "Confusion Matrix":
+        st.image("confusion_matrix.png", caption="Confusion Matrix", use_container_width=True)
 st.markdown("<br><br><center><i>Developed by Zeeshan Akram</i></center>", unsafe_allow_html=True)
