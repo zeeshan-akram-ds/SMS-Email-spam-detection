@@ -93,58 +93,25 @@ if st.button('Predict'):
             st.header("This is NOT a SPAM message!")
         with st.spinner("Explaining with LIME..."):
             try:
-                # Get explanation
+                # Explain the instance with max 7 features
                 exp = explainer.explain_instance(
                     input_text,
                     classifier_fn=lambda x: bernouli_clf.predict_proba(
                         tfidf_vectorizer.transform([preprocess_text(i) for i in x])
                     ),
-                    num_features=7  # Max 7 words for clarity
+                    num_features=7  # Keep it small and meaningful
                 )
+                
+                # Save and show HTML explanation only (no matplotlib)
                 exp.save_to_file('lime_explanation.html')
         
-                # Show LIME HTML explanation
                 with open('lime_explanation.html', 'r', encoding='utf-8') as f:
                     lime_html = f.read()
                     components.html(lime_html, height=600, scrolling=True)
         
-                # --- Beautiful, Clean Bar Chart of Top Words ---
-                st.markdown("### 📊 Top Influential Words (SPAM vs NOT SPAM)")
-        
-                # Prepare data
-                word_weights = exp.as_list()
-                df = pd.DataFrame(word_weights, columns=["Word", "Weight"])
-                df["Word"] = df["Word"].apply(lambda w: (w[:18] + "...") if len(w) > 18 else w)
-                df = df.sort_values("Weight")
-        
-                # Assign color
-                df["Color"] = df["Weight"].apply(lambda x: "#2ecc71" if x < 0 else "#e74c3c")
-        
-                # Plot
-                fig, ax = plt.subplots(figsize=(7, 4))
-                bars = ax.barh(df["Word"], df["Weight"], color=df["Color"])
-        
-                # Add value labels
-                for bar, weight in zip(bars, df["Weight"]):
-                    label_x = weight + 0.015 if weight > 0 else weight - 0.015
-                    ha = 'left' if weight > 0 else 'right'
-                    ax.text(label_x, bar.get_y() + bar.get_height()/2, f"{weight:.2f}",
-                            va='center', ha=ha, fontsize=8)
-        
-                # Styling
-                ax.axvline(0, color='black', linewidth=0.6)
-                ax.set_title("LIME Explanation: Word Impact", fontsize=12, weight='bold')
-                ax.set_xlabel("Impact Weight", fontsize=10)
-                ax.set_xlim(-0.3, 0.3)
-                ax.grid(axis='x', linestyle='--', alpha=0.3)
-                ax.set_yticklabels(ax.get_yticklabels(), fontsize=9)
-                plt.tight_layout()
-        
-                # Display plot
-                st.pyplot(fig)
-        
             except Exception as e:
                 st.error(f"Couldn't load LIME explanation: {e}")
+
     else:
         st.warning("Please enter a message to predict.")
 
