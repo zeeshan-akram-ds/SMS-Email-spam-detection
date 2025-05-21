@@ -19,16 +19,12 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
-import lime
-from lime.lime_text import LimeTextExplainer
-import streamlit.components.v1 as components
+import shap
 
 # Load
 bernouli_clf = joblib.load("Spam_detection_bernouli.pkl")
 tfidf_vectorizer = joblib.load("tfidf_spam_voting.pkl")
 
-class_names = ['Ham', 'Spam']
-explainer = LimeTextExplainer(class_names=class_names)
 # Preprocessing function
 stop_words = set(stopwords.words("english"))
 stemmer = PorterStemmer()
@@ -81,7 +77,9 @@ if st.button('Predict'):
     if input_text:
         # Preprocess the input
         preprocessed_text = preprocess_text(input_text)
-        
+        explainer = shap.Explainer(bernouli_clf.predict_proba, tfidf_vectorizer)
+        shap_values = explainer([processed_input])
+
         # Transform the text
         tfidf_input = tfidf_vectorizer.transform([preprocessed_text])
         proba = bernouli_clf.predict_proba(tfidf_input)
@@ -91,26 +89,17 @@ if st.button('Predict'):
             st.header("This is a SPAM message!")
         else:
             st.header("This is NOT a SPAM message!")
-        with st.spinner("Explaining with LIME..."):
+        with st.spinner("Explaining with SHAP..."):
             try:
-                # Explain the instance with max 7 features
-                exp = explainer.explain_instance(
-                    input_text,
-                    classifier_fn=lambda x: bernouli_clf.predict_proba(
-                        tfidf_vectorizer.transform([preprocess_text(i) for i in x])
-                    ),
-                    num_features=7  # Keep it small and meaningful
-                )
-                
-                # Save and show HTML explanation only (no matplotlib)
-                exp.save_to_file('lime_explanation.html')
+                # Create plot
+                shap_html = shap.plots.text(shap_values[0], display=False)  # Disable auto display
         
-                with open('lime_explanation.html', 'r', encoding='utf-8') as f:
-                    lime_html = f.read()
-                    components.html(lime_html, height=600, scrolling=True)
+                # Inject SHAP HTML into Streamlit
+                components.html(shap.getjs() + shap_html.html(), height=600, scrolling=True)
         
             except Exception as e:
-                st.error(f"Couldn't load LIME explanation: {e}")
+                st.error(f"SHAP explanation failed: {e}")
+
 
     else:
         st.warning("Please enter a message to predict.")
