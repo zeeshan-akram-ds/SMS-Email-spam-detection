@@ -89,17 +89,32 @@ if st.button('Predict'):
             st.header("This is NOT a SPAM message!")
         with st.spinner("Explaining with SHAP..."):
             try:
-                # Define explainer
-                def model_fn(x):
-                    return bernouli_clf.predict_proba(tfidf_vectorizer.transform(x))  # expects list of texts
+                # Step 1: Use background dataset (1 row) for SHAP KernelExplainer
+                background_data = tfidf_vectorizer.transform(["free entry in a weekly competition"])  # Just a neutral example
+                explainer = shap.KernelExplainer(bernouli_clf.predict_proba, background_data)
         
-                explainer = shap.KernelExplainer(model_fn, ["example placeholder"])  # SHAP needs some background data
-                shap_values = explainer.shap_values([preprocessed_text])
+                # Step 2: Compute SHAP values on current input
+                shap_values = explainer.shap_values(tfidf_input)
         
-                # Create SHAP bar plot (text plot won't work directly with KernelExplainer)
+                # Step 3: Plot SHAP values using bar chart
                 st.set_option('deprecation.showPyplotGlobalUse', False)
-                shap.summary_plot(shap_values, feature_names=tfidf_vectorizer.get_feature_names_out(), show=False)
-                st.pyplot(bbox_inches='tight')
+                feature_names = tfidf_vectorizer.get_feature_names_out()
+        
+                # Convert sparse matrix to dense for indexing
+                tfidf_dense = tfidf_input.toarray()[0]
+                top_indices = np.argsort(np.abs(shap_values[1][0]))[::-1][:10]  # Top 10 impactful features
+        
+                shap_df = pd.DataFrame({
+                    'Feature': [feature_names[i] for i in top_indices],
+                    'SHAP Value': [shap_values[1][0][i] for i in top_indices],
+                    'TF-IDF Value': [tfidf_dense[i] for i in top_indices]
+                })
+        
+                # Plot using matplotlib
+                plt.figure(figsize=(10, 5))
+                sns.barplot(x='SHAP Value', y='Feature', data=shap_df, palette="coolwarm")
+                plt.title("Top SHAP Explanation Features")
+                st.pyplot()
         
             except Exception as e:
                 st.error(f"SHAP explanation failed: {e}")
