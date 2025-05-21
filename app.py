@@ -20,7 +20,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 from lime.lime_text import LimeTextExplainer
-
+import streamlit.components.v1 as components
 
 # Load
 bernouli_clf = joblib.load("Spam_detection_bernouli.pkl")
