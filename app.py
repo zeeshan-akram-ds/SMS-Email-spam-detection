@@ -19,7 +19,8 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
-import shap
+from lime.lime_text import LimeTextExplainer
+
 
 # Load
 bernouli_clf = joblib.load("Spam_detection_bernouli.pkl")
@@ -87,46 +88,27 @@ if st.button('Predict'):
             st.header("This is a SPAM message!")
         else:
             st.header("This is NOT a SPAM message!")
-        with st.spinner("Explaining with SHAP..."):
+        with st.spinner("Explaining with LIME..."):
             try:
-                # Step 1: Use diverse background text (must have both spam/ham words ideally)
-                background_texts = [
-                    "urgent win lottery free entry now",  # spammy
-                    "hello how are you doing today"      # hammy
-                ]
-                background_preprocessed = [preprocess_text(text) for text in background_texts]
-                background_vectors = tfidf_vectorizer.transform(background_preprocessed).toarray()
+                # LIME works on raw (unprocessed) input, so use original input_text
+                class_names = ['ham', 'spam']
+                explainer = LimeTextExplainer(class_names=class_names)
 
-                # Step 2: Convert current input to dense
-                tfidf_dense_input = tfidf_input.toarray()
+                # Define a wrapper for predict_proba that matches LIME's expectation
+                def predict_proba(texts):
+                    preprocessed = [preprocess_text(t) for t in texts]
+                    tfidf_vectors = tfidf_vectorizer.transform(preprocessed)
+                    return bernouli_clf.predict_proba(tfidf_vectors)
 
-                # Step 3: Use KernelExplainer
-                explainer = shap.KernelExplainer(bernouli_clf.predict_proba, background_vectors)
+                # Generate explanation for the original input_text
+                explanation = explainer.explain_instance(input_text, predict_proba, num_features=10)
 
-                # Step 4: Compute SHAP values
-                shap_values = explainer.shap_values(tfidf_dense_input)
-
-                # Step 5: Select class index dynamically (spam = 1)
-                class_index = list(bernouli_clf.classes_).index(1)
-
-                # Step 6: Get feature names & top impactful ones
-                feature_names = tfidf_vectorizer.get_feature_names_out()
-                top_indices = np.argsort(np.abs(shap_values[class_index][0]))[::-1][:10]
-
-                shap_df = pd.DataFrame({
-                    'Feature': [feature_names[i] for i in top_indices],
-                    'SHAP Value': [shap_values[class_index][0][i] for i in top_indices],
-                    'TF-IDF Value': [tfidf_dense_input[0][i] for i in top_indices]
-                })
-
-                # Step 7: Plot
-                plt.figure(figsize=(10, 5))
-                sns.barplot(x='SHAP Value', y='Feature', data=shap_df, palette="coolwarm")
-                plt.title("Top SHAP Explanation Features")
-                st.pyplot()
+                with st.expander("🔍 LIME Explanation", expanded=True):
+                    st.markdown("### 🔬 Top 10 Word Contributions")
+                    components.html(explanation.as_html(), height=500, scrolling=True)
 
             except Exception as e:
-                st.error(f"SHAP explanation failed: {e}")
+                st.error(f"LIME explanation failed: {e}")
     else:
         st.warning("Please enter a message to predict.")
 
