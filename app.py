@@ -78,7 +78,7 @@ if st.button('Predict'):
         # Preprocess the input
         preprocessed_text = preprocess_text(input_text)
         explainer = shap.Explainer(bernouli_clf.predict_proba, tfidf_vectorizer)
-        shap_values = explainer([processed_input])
+        shap_values = explainer([preprocessed_text])
 
         # Transform the text
         tfidf_input = tfidf_vectorizer.transform([preprocessed_text])
