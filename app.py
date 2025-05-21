@@ -89,34 +89,44 @@ if st.button('Predict'):
             st.header("This is NOT a SPAM message!")
         with st.spinner("Explaining with SHAP..."):
             try:
-                # Use dense background data with same shape
-                background_text = ["free entry in a weekly competition"]
-                background_tfidf = tfidf_vectorizer.transform(background_text).toarray()
-                input_dense = tfidf_input.toarray()
-        
-                # Use KernelExplainer with dense input
-                explainer = shap.KernelExplainer(bernouli_clf.predict_proba, background_tfidf)
-                shap_values = explainer.shap_values(input_dense)
-        
-                # Get feature names and values
+                # Step 1: Use diverse background text (must have both spam/ham words ideally)
+                background_texts = [
+                    "urgent win lottery free entry now",  # spammy
+                    "hello how are you doing today"      # hammy
+                ]
+                background_preprocessed = [preprocess_text(text) for text in background_texts]
+                background_vectors = tfidf_vectorizer.transform(background_preprocessed).toarray()
+
+                # Step 2: Convert current input to dense
+                tfidf_dense_input = tfidf_input.toarray()
+
+                # Step 3: Use KernelExplainer
+                explainer = shap.KernelExplainer(bernouli_clf.predict_proba, background_vectors)
+
+                # Step 4: Compute SHAP values
+                shap_values = explainer.shap_values(tfidf_dense_input)
+
+                # Step 5: Select class index dynamically (spam = 1)
+                class_index = list(bernouli_clf.classes_).index(1)
+
+                # Step 6: Get feature names & top impactful ones
                 feature_names = tfidf_vectorizer.get_feature_names_out()
-                top_indices = np.argsort(np.abs(shap_values[1][0]))[::-1][:10]
-        
+                top_indices = np.argsort(np.abs(shap_values[class_index][0]))[::-1][:10]
+
                 shap_df = pd.DataFrame({
                     'Feature': [feature_names[i] for i in top_indices],
-                    'SHAP Value': [shap_values[1][0][i] for i in top_indices],
-                    'TF-IDF Value': [input_dense[0][i] for i in top_indices]
+                    'SHAP Value': [shap_values[class_index][0][i] for i in top_indices],
+                    'TF-IDF Value': [tfidf_dense_input[0][i] for i in top_indices]
                 })
-        
-                # Plot using seaborn
+
+                # Step 7: Plot
                 plt.figure(figsize=(10, 5))
                 sns.barplot(x='SHAP Value', y='Feature', data=shap_df, palette="coolwarm")
                 plt.title("Top SHAP Explanation Features")
                 st.pyplot()
-        
+
             except Exception as e:
                 st.error(f"SHAP explanation failed: {e}")
-
     else:
         st.warning("Please enter a message to predict.")
 
