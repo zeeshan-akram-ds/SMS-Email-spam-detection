@@ -89,26 +89,18 @@ if st.button('Predict'):
             st.header("This is NOT a SPAM message!")
         with st.spinner("Explaining with SHAP..."):
             try:
-                explainer = shap.LinearExplainer(bernouli_clf, tfidf_vectorizer.transform(["dummy text"]))
-                shap_values = explainer(tfidf_input)
-
-                # Convert SHAP values to displayable format
-                feature_names = tfidf_vectorizer.get_feature_names_out()
-                scores = shap_values.values[0]
-                tokens_scores = sorted(zip(feature_names, scores), key=lambda x: abs(x[1]), reverse=True)[:20]
-
-                # Display bar chart (Top SHAP words)
-                shap_df = pd.DataFrame(tokens_scores, columns=['Word', 'SHAP Value'])
-                shap_df = shap_df[shap_df["SHAP Value"] != 0]
-
-                if not shap_df.empty:
-                    fig, ax = plt.subplots(figsize=(10, 5))
-                    sns.barplot(data=shap_df, x="SHAP Value", y="Word", palette="coolwarm", ax=ax)
-                    ax.set_title("Top SHAP Word Contributions to Prediction")
-                    st.pyplot(fig)
-                else:
-                    st.info("No significant SHAP values found for this text.")
-
+                # Define explainer
+                def model_fn(x):
+                    return bernouli_clf.predict_proba(tfidf_vectorizer.transform(x))  # expects list of texts
+        
+                explainer = shap.KernelExplainer(model_fn, ["example placeholder"])  # SHAP needs some background data
+                shap_values = explainer.shap_values([preprocessed_text])
+        
+                # Create SHAP bar plot (text plot won't work directly with KernelExplainer)
+                st.set_option('deprecation.showPyplotGlobalUse', False)
+                shap.summary_plot(shap_values, feature_names=tfidf_vectorizer.get_feature_names_out(), show=False)
+                st.pyplot(bbox_inches='tight')
+        
             except Exception as e:
                 st.error(f"SHAP explanation failed: {e}")
     else:
