@@ -1,4 +1,4 @@
-# Spam Detection System using Voting Classifier
+# Spam Detection System using Bernouli Classifier
 
 A robust SMS/Email Spam Detection project that uses advanced NLP techniques, multiple classification models, and an optimized ensemble voting strategy to accurately distinguish spam from ham (not spam). This project also includes an interactive Streamlit web app for real-time predictions.
 
