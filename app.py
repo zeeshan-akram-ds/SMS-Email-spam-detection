@@ -90,21 +90,18 @@ if st.button('Predict'):
             st.header("This is NOT a SPAM message!")
         with st.spinner("Explaining with LIME..."):
             try:
-                # LIME works on raw (unprocessed) input, so use original input_text
                 class_names = ['ham', 'spam']
                 explainer = LimeTextExplainer(class_names=class_names)
 
-                # Define a wrapper for predict_proba that matches LIME's expectation
-                def predict_proba(texts):
+\                def predict_proba(texts):
                     preprocessed = [preprocess_text(t) for t in texts]
                     tfidf_vectors = tfidf_vectorizer.transform(preprocessed)
                     return bernouli_clf.predict_proba(tfidf_vectors)
 
-                # Generate explanation for the original input_text
                 explanation = explainer.explain_instance(input_text, predict_proba, num_features=10)
 
-                with st.expander("🔍 LIME Explanation", expanded=True):
-                    st.markdown("### 🔬 Top 10 Word Contributions")
+                with st.expander("LIME Explanation", expanded=True):
+                    st.markdown("### Top 10 Word Contributions")
                     components.html(explanation.as_html(), height=500, scrolling=True)
 
             except Exception as e:
