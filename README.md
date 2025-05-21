@@ -19,7 +19,7 @@ This project aims to build a high-precision spam detection system using ensemble
 - TF-IDF Vectorization  
 - Baseline and Advanced Models (Naive Bayes, XGBoost, Random Forest)  
 - Hyperparameter Tuning with GridSearchCV & Optuna  
-- Final Model: Optimized Voting Classifier  
+- Final Model: Optimized Bernouli Classifier  
 - Streamlit App for Real-Time Spam Detection  
 
 ---
@@ -66,8 +66,7 @@ This project aims to build a high-precision spam detection system using ensemble
 - Plotted Precision-Recall curve for performance insights
 
 ### 7. Final Model: Voting Classifier
-- Combined BernoulliNB (tuned), MultinomialNB (tuned), and RFC (default)
-- Tested different voting strategies (soft/hard) and weight combinations
+- BernoulliNB (tuned)
 - Final selection based on achieving maximum precision
 
 ---
