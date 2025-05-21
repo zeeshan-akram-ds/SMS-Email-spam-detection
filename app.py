@@ -77,9 +77,7 @@ if st.button('Predict'):
     if input_text:
         # Preprocess the input
         preprocessed_text = preprocess_text(input_text)
-        explainer = shap.Explainer(bernouli_clf.predict_proba, tfidf_vectorizer)
-        shap_values = explainer([preprocessed_text])
-
+    
         # Transform the text
         tfidf_input = tfidf_vectorizer.transform([preprocessed_text])
         proba = bernouli_clf.predict_proba(tfidf_input)
@@ -91,16 +89,28 @@ if st.button('Predict'):
             st.header("This is NOT a SPAM message!")
         with st.spinner("Explaining with SHAP..."):
             try:
-                # Create plot
-                shap_html = shap.plots.text(shap_values[0], display=False)  # Disable auto display
-        
-                # Inject SHAP HTML into Streamlit
-                components.html(shap.getjs() + shap_html.html(), height=600, scrolling=True)
-        
+                explainer = shap.LinearExplainer(bernouli_clf, tfidf_vectorizer.transform(["dummy text"]))
+                shap_values = explainer(tfidf_input)
+
+                # Convert SHAP values to displayable format
+                feature_names = tfidf_vectorizer.get_feature_names_out()
+                scores = shap_values.values[0]
+                tokens_scores = sorted(zip(feature_names, scores), key=lambda x: abs(x[1]), reverse=True)[:20]
+
+                # Display bar chart (Top SHAP words)
+                shap_df = pd.DataFrame(tokens_scores, columns=['Word', 'SHAP Value'])
+                shap_df = shap_df[shap_df["SHAP Value"] != 0]
+
+                if not shap_df.empty:
+                    fig, ax = plt.subplots(figsize=(10, 5))
+                    sns.barplot(data=shap_df, x="SHAP Value", y="Word", palette="coolwarm", ax=ax)
+                    ax.set_title("Top SHAP Word Contributions to Prediction")
+                    st.pyplot(fig)
+                else:
+                    st.info("No significant SHAP values found for this text.")
+
             except Exception as e:
                 st.error(f"SHAP explanation failed: {e}")
-
-
     else:
         st.warning("Please enter a message to predict.")
 
