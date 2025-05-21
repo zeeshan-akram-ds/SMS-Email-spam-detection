@@ -93,7 +93,7 @@ if st.button('Predict'):
                 class_names = ['ham', 'spam']
                 explainer = LimeTextExplainer(class_names=class_names)
 
-\                def predict_proba(texts):
+                def predict_proba(texts):
                     preprocessed = [preprocess_text(t) for t in texts]
                     tfidf_vectors = tfidf_vectorizer.transform(preprocessed)
                     return bernouli_clf.predict_proba(tfidf_vectors)
