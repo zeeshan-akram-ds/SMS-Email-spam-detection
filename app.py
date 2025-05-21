@@ -89,28 +89,26 @@ if st.button('Predict'):
             st.header("This is NOT a SPAM message!")
         with st.spinner("Explaining with SHAP..."):
             try:
-                # Step 1: Use background dataset (1 row) for SHAP KernelExplainer
-                background_data = tfidf_vectorizer.transform(["free entry in a weekly competition"])  # Just a neutral example
-                explainer = shap.KernelExplainer(bernouli_clf.predict_proba, background_data)
+                # Use dense background data with same shape
+                background_text = ["free entry in a weekly competition"]
+                background_tfidf = tfidf_vectorizer.transform(background_text).toarray()
+                input_dense = tfidf_input.toarray()
         
-                # Step 2: Compute SHAP values on current input
-                shap_values = explainer.shap_values(tfidf_input)
+                # Use KernelExplainer with dense input
+                explainer = shap.KernelExplainer(bernouli_clf.predict_proba, background_tfidf)
+                shap_values = explainer.shap_values(input_dense)
         
-                # Step 3: Plot SHAP values using bar chart
-                st.set_option('deprecation.showPyplotGlobalUse', False)
+                # Get feature names and values
                 feature_names = tfidf_vectorizer.get_feature_names_out()
-        
-                # Convert sparse matrix to dense for indexing
-                tfidf_dense = tfidf_input.toarray()[0]
-                top_indices = np.argsort(np.abs(shap_values[1][0]))[::-1][:10]  # Top 10 impactful features
+                top_indices = np.argsort(np.abs(shap_values[1][0]))[::-1][:10]
         
                 shap_df = pd.DataFrame({
                     'Feature': [feature_names[i] for i in top_indices],
                     'SHAP Value': [shap_values[1][0][i] for i in top_indices],
-                    'TF-IDF Value': [tfidf_dense[i] for i in top_indices]
+                    'TF-IDF Value': [input_dense[0][i] for i in top_indices]
                 })
         
-                # Plot using matplotlib
+                # Plot using seaborn
                 plt.figure(figsize=(10, 5))
                 sns.barplot(x='SHAP Value', y='Feature', data=shap_df, palette="coolwarm")
                 plt.title("Top SHAP Explanation Features")
@@ -118,6 +116,7 @@ if st.button('Predict'):
         
             except Exception as e:
                 st.error(f"SHAP explanation failed: {e}")
+
     else:
         st.warning("Please enter a message to predict.")
 
