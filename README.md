@@ -102,6 +102,8 @@ A simple yet effective UI built using Streamlit. The app:
 - Also shows model performance metrics in an expandable section
 
 ---
+## App Link
+[Streamlit app link](https://sms-email-spam-detection-yewskmnzauz62xhsjkmjj5.streamlit.app/)
 
 ## Tech Stack
 
